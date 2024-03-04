@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Random;
 
 public class Monte implements IBot {
-    private static final String botName = "Monte Carlo Bot";
+    private static final String botName = "Monte Carlo Bot-Brandon";
     private static final int NUM_SIMULATIONS = 1000;
     private Random random = new Random();
 
