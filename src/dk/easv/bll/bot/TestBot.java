@@ -16,7 +16,9 @@ public class TestBot implements IBot {
     }
 
     private ScoredMove minimax(IGameState state, int depth, int alpha, int beta, boolean maximizingPlayer) {
+        //get a list of all available moves from the game state via the interface
         List<IMove> availableMoves = state.getField().getAvailableMoves();
+
 
         if (depth == 0 || availableMoves.isEmpty()) {
             if (availableMoves.isEmpty()) {
