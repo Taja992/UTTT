@@ -10,26 +10,62 @@ import java.util.Random;
 
 public class Monte implements IBot {
     private static final String botName = "Monte Carlo Bot-Brandon";
-    private static final int NUM_SIMULATIONS = 1000;
+    private static final int NUM_SIMULATIONS = 500;
     private Random random = new Random();
 
     @Override
     public IMove doMove(IGameState state) {
         List<IMove> availableMoves = state.getField().getAvailableMoves();
-        IMove bestMove = null;
+
+        // Check for winning moves
+        for (IMove move : availableMoves) {
+            IGameState simulatedState = cloneGameState(state);
+            simulatedState.getField().getBoard()[move.getX()][move.getY()] = "0";
+            if (checkWinCondition(simulatedState, move.getX() / 3 * 3, move.getY() / 3 * 3)) {
+                return move; // Return the winning move
+            }
+        }
+
+        IMove bestMove = availableMoves.getFirst();
+        //set to null and later replaced with the 'best move'
+        //if no move results in win, bestMove returns the first available move
         double bestWinRate = Double.NEGATIVE_INFINITY;
 
+
+
+//        for (IMove move : availableMoves) {
+//            int wins = 0;
+//            for (int i = 0; i < NUM_SIMULATIONS; i++) {
+//                IGameState simulatedState = cloneGameState(state);
+//                simulatedState.getField().getBoard()[move.getX()][move.getY()] = "0";
+//                if (simulateGame(simulatedState)) {
+//                    wins++;
+//                }
+//            }
+//
+//            double winRate = (double) wins / NUM_SIMULATIONS;
+//            if (winRate > bestWinRate) {
+//                bestWinRate = winRate;
+//                bestMove = move;
+//            }
+//        }
+        long timePerMove = 990 / availableMoves.size(); // Divide the total time equally among all the moves
         for (IMove move : availableMoves) {
             int wins = 0;
-            for (int i = 0; i < NUM_SIMULATIONS; i++) {
+            int simulations = 0;
+            long startTime = System.currentTimeMillis();
+            while (System.currentTimeMillis() - startTime < timePerMove) {
                 IGameState simulatedState = cloneGameState(state);
                 simulatedState.getField().getBoard()[move.getX()][move.getY()] = "0";
                 if (simulateGame(simulatedState)) {
                     wins++;
                 }
+                simulations++;
             }
 
-            double winRate = (double) wins / NUM_SIMULATIONS;
+            System.out.println("Move: " + move + ", Simulations: " + simulations); // Print the number of simulations
+
+            double winRate = (double) wins / simulations;
             if (winRate > bestWinRate) {
                 bestWinRate = winRate;
                 bestMove = move;
