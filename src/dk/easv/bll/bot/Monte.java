@@ -10,47 +10,39 @@ import java.util.Random;
 
 public class Monte implements IBot {
     private static final String botName = "Monte Carlo Bot-Brandon";
-    private static final int NUM_SIMULATIONS = 500;
     private Random random = new Random();
 
     @Override
     public IMove doMove(IGameState state) {
         List<IMove> availableMoves = state.getField().getAvailableMoves();
 
-        // Check for winning moves
+// Check for winning moves
         for (IMove move : availableMoves) {
             IGameState simulatedState = cloneGameState(state);
             simulatedState.getField().getBoard()[move.getX()][move.getY()] = "0";
-            if (checkWinCondition(simulatedState, move.getX() / 3 * 3, move.getY() / 3 * 3)) {
+            if (checkWinCondition(simulatedState, move.getX() / 3 * 3, move.getY() / 3 * 3, "0")) {
                 return move; // Return the winning move
             }
         }
 
-        IMove bestMove = availableMoves.getFirst();
-        //set to null and later replaced with the 'best move'
-        //if no move results in win, bestMove returns the first available move
-        double bestWinRate = Double.NEGATIVE_INFINITY;
-
-
-
-//        for (IMove move : availableMoves) {
-//            int wins = 0;
-//            for (int i = 0; i < NUM_SIMULATIONS; i++) {
-//                IGameState simulatedState = cloneGameState(state);
-//                simulatedState.getField().getBoard()[move.getX()][move.getY()] = "0";
-//                if (simulateGame(simulatedState)) {
-//                    wins++;
-//                }
-//            }
-//
-//            double winRate = (double) wins / NUM_SIMULATIONS;
-//            if (winRate > bestWinRate) {
-//                bestWinRate = winRate;
-//                bestMove = move;
-//            }
-//        }
-        long timePerMove = 990 / availableMoves.size(); // Divide the total time equally among all the moves
+// Check for opponent's winning moves
         for (IMove move : availableMoves) {
+            IGameState simulatedState = cloneGameState(state);
+            simulatedState.getField().getBoard()[move.getX()][move.getY()] = "1"; // Simulate the opponent's move
+            simulatedState.setMoveNumber(simulatedState.getMoveNumber() + 1); // Update the move number
+            if (checkWinCondition(simulatedState, move.getX() / 3 * 3, move.getY() / 3 * 3, "1")) {
+                return move; // Block the opponent's winning move
+            }
+        }
+
+        IMove bestMove = availableMoves.getFirst();
+        double bestWinRate = Double.NEGATIVE_INFINITY;
+        long timePerMove = 990 / availableMoves.size();
+
+        for (IMove move : availableMoves) {
+            if (opensBoard(state, move)) {
+                continue; // Skip this move
+            }
             int wins = 0;
             int simulations = 0;
             long startTime = System.currentTimeMillis();
@@ -84,13 +76,14 @@ public class Monte implements IBot {
             }
             IMove randomMove = availableMoves.get(random.nextInt(availableMoves.size()));
 
-            state.getField().getBoard()[randomMove.getX()][randomMove.getY()] = state.getMoveNumber() % 2 == 0 ? "0" : "1";
+            String currentPlayer = state.getMoveNumber() % 2 == 0 ? "0" : "1";
+            state.getField().getBoard()[randomMove.getX()][randomMove.getY()] = currentPlayer;
             state.setMoveNumber(state.getMoveNumber() + 1);
 
             // Check for win condition in the sub-board
             int subBoardX = randomMove.getX() / 3;
             int subBoardY = randomMove.getY() / 3;
-            if (checkWinCondition(state, subBoardX * 3, subBoardY * 3)) {
+            if (checkWinCondition(state, subBoardX * 3, subBoardY * 3, currentPlayer)) {
                 return true;
             }
         }
@@ -98,9 +91,8 @@ public class Monte implements IBot {
         return false;
     }
 
-    private boolean checkWinCondition(IGameState state, int startX, int startY) {
+    private boolean checkWinCondition(IGameState state, int startX, int startY, String player) {
         String[][] board = state.getField().getBoard();
-        String player = state.getMoveNumber() % 2 == 0 ? "0" : "1";
 
         // Check rows
         for (int y = 0; y < 3; y++) {
@@ -136,6 +128,21 @@ public class Monte implements IBot {
         return false;
     }
 
+    private boolean opensBoard(IGameState state, IMove move) {
+        int subBoardX = move.getX() % 3;
+        int subBoardY = move.getY() % 3;
+        String[][] board = state.getField().getBoard();
+
+        for (int x = subBoardX * 3; x < (subBoardX + 1) * 3; x++) {
+            for (int y = subBoardY * 3; y < (subBoardY + 1) * 3; y++) {
+                if (board[x][y].equals(IField.EMPTY_FIELD)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
     @Override
     public String getBotName() {
         return botName;
