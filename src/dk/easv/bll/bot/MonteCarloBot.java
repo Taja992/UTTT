@@ -43,7 +43,7 @@ public class MonteCarloBot extends ExampleSneakyBot {
 
     @Override
     public String getBotName() {
-        return "MonteCarloBot";
+        return "MonteCarloBot-Tommy";
     }
 
     private GameSimulator createSimulator(IGameState state) {
