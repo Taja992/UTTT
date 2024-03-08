@@ -16,21 +16,28 @@ public class TrialBot implements IBot {
     public IMove doMove(IGameState state) {
         List<IMove> availableMoves = state.getField().getAvailableMoves();
 
+        // Remove the center spot from available moves
+        availableMoves.removeIf(move -> move.getX() % 3 == 1 && move.getY() % 3 == 1);
+
+        // If no other moves are available, add the center spot back
+        if (availableMoves.isEmpty()) {
+            availableMoves = state.getField().getAvailableMoves();
+        }
 // Check for winning moves
         for (IMove move : availableMoves) {
             IGameState simulatedState = cloneGameState(state);
             simulatedState.getField().getBoard()[move.getX()][move.getY()] = "0";
-            if (checkWinCondition(simulatedState, "0")) {
+            if (checkWinCondition(simulatedState, move.getX() / 3 * 3, move.getY() / 3 * 3, "0")) {
                 return move; // Return the winning move
             }
         }
 
-        // Check for opponent's winning moves
+// Check for opponent's winning moves
         for (IMove move : availableMoves) {
             IGameState simulatedState = cloneGameState(state);
             simulatedState.getField().getBoard()[move.getX()][move.getY()] = "1"; // Simulate the opponent's move
             simulatedState.setMoveNumber(simulatedState.getMoveNumber() + 1); // Update the move number
-            if (checkWinCondition(simulatedState, "1")) {
+            if (checkWinCondition(simulatedState, move.getX() / 3 * 3, move.getY() / 3 * 3, "1")) {
                 return move; // Block the opponent's winning move
             }
         }
@@ -39,14 +46,14 @@ public class TrialBot implements IBot {
         double bestWinRate = Double.NEGATIVE_INFINITY;
         long timePerMove = 990 / availableMoves.size();
 
-        for (IMove move : availableMoves) {
+        for (int i = 0; i < availableMoves.size(); i++) {
+            IMove move = availableMoves.get(i);
             if (opensBoard(state, move)) {
-                continue; // Skip this move if it will open the board for any play
+                continue; // Skip this move
             }
             int wins = 0;
             int simulations = 0;
             long startTime = System.currentTimeMillis();
-            //stay within our 1000ms timer to run simulations
             while (System.currentTimeMillis() - startTime < timePerMove) {
                 IGameState simulatedState = cloneGameState(state);
                 simulatedState.getField().getBoard()[move.getX()][move.getY()] = "0";
@@ -81,55 +88,18 @@ public class TrialBot implements IBot {
             state.getField().getBoard()[randomMove.getX()][randomMove.getY()] = currentPlayer;
             state.setMoveNumber(state.getMoveNumber() + 1);
 
-            // Check for win condition in the overall game
-            if (checkWinCondition(state, currentPlayer)) {
+            // Check for win condition in the sub-board
+            int subBoardX = randomMove.getX() / 3;
+            int subBoardY = randomMove.getY() / 3;
+            if (checkWinCondition(state, subBoardX * 3, subBoardY * 3, currentPlayer)) {
                 return true;
             }
-        }
-        return false;
-    }
-
-    private boolean checkWinCondition(IGameState state, String player) {
-        String[][] board = new String[3][3];
-
-        // Check each 3x3 board for a win
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                if (checkSmallGameWinCondition(state, i * 3, j * 3, player)) {
-                    board[i][j] = player;
-                } else {
-                    board[i][j] = "";
-                }
-            }
-        }
-
-        // Check rows
-        for (int i = 0; i < 3; i++) {
-            if (board[i][0].equals(player) && board[i][1].equals(player) && board[i][2].equals(player)) {
-                return true;
-            }
-        }
-
-        // Check columns
-        for (int i = 0; i < 3; i++) {
-            if (board[0][i].equals(player) && board[1][i].equals(player) && board[2][i].equals(player)) {
-                return true;
-            }
-        }
-
-        // Check diagonals
-        if (board[0][0].equals(player) && board[1][1].equals(player) && board[2][2].equals(player)) {
-            return true;
-        }
-
-        if (board[0][2].equals(player) && board[1][1].equals(player) && board[2][0].equals(player)) {
-            return true;
         }
 
         return false;
     }
 
-    private boolean checkSmallGameWinCondition(IGameState state, int startX, int startY, String player) {
+    private boolean checkWinCondition(IGameState state, int startX, int startY, String player) {
         String[][] board = state.getField().getBoard();
 
         // Check rows
@@ -157,9 +127,9 @@ public class TrialBot implements IBot {
             return true;
         }
 
-        if (board[startX][startY + 2].equals(player) &&
+        if (board[startX + 2][startY].equals(player) &&
                 board[startX + 1][startY + 1].equals(player) &&
-                board[startX + 2][startY].equals(player)) {
+                board[startX][startY + 2].equals(player)) {
             return true;
         }
 
@@ -178,6 +148,7 @@ public class TrialBot implements IBot {
                 }
             }
         }
+
         return true;
     }
     @Override
