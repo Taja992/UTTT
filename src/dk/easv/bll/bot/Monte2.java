@@ -8,8 +8,8 @@ import dk.easv.bll.move.IMove;
 import java.util.List;
 import java.util.Random;
 
-public class Monte implements IBot {
-    private static final String botName = "Monte Carlo Bot-Brandon";
+public class Monte2 implements IBot {
+    private static final String botName = "Monte Carlo Bot-Fused";
     private Random random = new Random();
 
     @Override
@@ -68,6 +68,13 @@ public class Monte implements IBot {
         return bestMove;
     }
 
+    private boolean isAdvantageousForOpponent(IGameState state, IMove move) {
+        IGameState simulatedState = cloneGameState(state);
+        simulatedState.getField().getBoard()[move.getX()][move.getY()] = "1"; // Simulate the opponent's move
+        simulatedState.setMoveNumber(simulatedState.getMoveNumber() + 1); // Update the move number
+        return opensBoard(simulatedState, move) || checkWinCondition(simulatedState, move.getX() / 3 * 3, move.getY() / 3 * 3, "1");
+    }
+
     private boolean simulateGame(IGameState state) {
         while (!state.getField().isFull()) {
             List<IMove> availableMoves = state.getField().getAvailableMoves();
@@ -75,20 +82,39 @@ public class Monte implements IBot {
                 // No more moves available, game is a draw
                 return false;
             }
-            IMove randomMove = availableMoves.get(random.nextInt(availableMoves.size()));
-
+    
+            IMove bestMove = null;
             String currentPlayer = state.getMoveNumber() % 2 == 0 ? "0" : "1";
-            state.getField().getBoard()[randomMove.getX()][randomMove.getY()] = currentPlayer;
+    
+            if (currentPlayer.equals("0")) { // Bot's turn
+                for (IMove move : availableMoves) {
+                    if (!isAdvantageousForOpponent(state, move)) {
+                        bestMove = move;
+                        break;
+                    }
+                }
+    
+                if (bestMove == null) {
+                    // All moves are advantageous for the opponent, make a random move
+                    bestMove = availableMoves.get(random.nextInt(availableMoves.size()));
+                }
+            } else { // Opponent's turn
+                // Simulate the opponent's move. This is a simple strategy where the opponent makes a random move.
+                // You can replace this with a different strategy if you have information about the opponent's likely strategy.
+                bestMove = availableMoves.get(random.nextInt(availableMoves.size()));
+            }
+    
+            state.getField().getBoard()[bestMove.getX()][bestMove.getY()] = currentPlayer;
             state.setMoveNumber(state.getMoveNumber() + 1);
-
+    
             // Check for win condition in the sub-board
-            int subBoardX = randomMove.getX() / 3;
-            int subBoardY = randomMove.getY() / 3;
+            int subBoardX = bestMove.getX() / 3;
+            int subBoardY = bestMove.getY() / 3;
             if (checkWinCondition(state, subBoardX * 3, subBoardY * 3, currentPlayer)) {
-                return true;
+                return currentPlayer.equals("0");
             }
         }
-
+    
         return false;
     }
 
